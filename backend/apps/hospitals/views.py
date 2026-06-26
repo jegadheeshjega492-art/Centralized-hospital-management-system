@@ -2,6 +2,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .models import Hospital, DoctorProfile
+from apps.accounts.permissions import IsHospitalAdmin
 from .serializers import HospitalSerializer, DoctorCreateSerializer, DoctorProfileSerializer
 
 
@@ -34,35 +35,37 @@ class DoctorCreateView(generics.CreateAPIView):
     The doctor is automatically linked to the admin's hospital.
     """
     serializer_class = DoctorCreateSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsHospitalAdmin]
 
-    def create(self, request, *args, **kwargs):
-        user = request.user
+   
+def create(self, request, *args, **kwargs):
+    user = request.user
 
-        # Check the user has a hospital_admin_profile
-        if not hasattr(user, 'hospital_admin_profile'):
-            return Response(
-                {"error": "Only hospital admins can create doctor accounts."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        hospital = user.hospital_admin_profile.hospital
-
-        # Block if hospital is not verified yet
-        if not hospital.verified:
-            return Response(
-                {"error": "Your hospital is not verified yet. Contact the system admin."},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        serializer = self.get_serializer(data=request.data, context={'hospital': hospital})
-        serializer.is_valid(raise_exception=True)
-        doctor = serializer.save()
-
+    # Get the hospital from the doctor profile or a separate field
+    # For now, require hospital_id in the request body
+    hospital_id = request.data.get('hospital_id')
+    try:
+        hospital = Hospital.objects.get(id=hospital_id)
+    except Hospital.DoesNotExist:
         return Response(
-            {
-                "message": "Doctor account created successfully. Awaiting verification.",
-                "doctor": DoctorProfileSerializer(doctor).data
-            },
-            status=status.HTTP_201_CREATED
+            {"error": "Hospital not found."},
+            status=status.HTTP_404_NOT_FOUND
         )
+
+    if not hospital.verified:
+        return Response(
+            {"error": "Your hospital is not verified yet."},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    serializer = self.get_serializer(data=request.data, context={'hospital': hospital})
+    serializer.is_valid(raise_exception=True)
+    doctor = serializer.save()
+
+    return Response(
+        {
+            "message": "Doctor account created successfully.",
+            "doctor": DoctorProfileSerializer(doctor).data
+        },
+        status=status.HTTP_201_CREATED
+    )

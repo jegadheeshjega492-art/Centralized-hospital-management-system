@@ -41,6 +41,7 @@ class DoctorCreateSerializer(serializers.ModelSerializer):
             password=password,
             first_name=first_name,
             last_name=last_name
+            role='DOCTOR'
         )
 
         # Hospital comes from the request (injected by the view)
