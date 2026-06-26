@@ -1,4 +1,3 @@
-# TODO: Person responsible for 'hospitals' fills this in.
 from django.db import models
 from django.conf import settings
 
@@ -39,3 +38,19 @@ class DoctorProfile(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+class HospitalAdminProfile(models.Model):
+    user     = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='hospital_admin_profile'
+    )
+    hospital = models.ForeignKey(
+        Hospital,
+        on_delete=models.CASCADE,
+        related_name='admins'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} → {self.hospital.name}"

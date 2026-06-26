@@ -1,14 +1,31 @@
-// Central Axios/fetch wrapper — all API calls go through here.
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
+import axios from 'axios'
 
-export async function apiFetch(path: string, options: RequestInit = {}) {
+const api = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api',
+  headers: { 'Content-Type': 'application/json' },
+})
+
+// Before every request — attach JWT token if it exists in localStorage
+api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token')
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: Bearer  } : {}),
-    ...(options.headers as Record<string, string>),
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
   }
-  const res = await fetch(${BASE_URL}, { ...options, headers })
-  if (!res.ok) throw new Error(await res.text())
-  return res.json()
-}
+  return config
+})
+
+// If any response comes back 401 (token expired) — clear storage and redirect to login
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const isAuthEndpoint = error.config?.url?.includes('/auth/')
+    if (error.response?.status === 401 && !isAuthEndpoint) {
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
+
+export default api
