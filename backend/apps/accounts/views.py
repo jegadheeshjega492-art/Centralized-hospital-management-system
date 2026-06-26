@@ -2,9 +2,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
-from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import PatientRegisterSerializer, UserSerializer
-
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import MyTokenObtainPairSerializer
 
 class PatientRegisterView(APIView):
     permission_classes = [AllowAny]
@@ -25,3 +25,6 @@ class MeView(APIView):
     """Returns the currently logged-in user's basic info."""
     def get(self, request):
         return Response(UserSerializer(request.user).data)
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
