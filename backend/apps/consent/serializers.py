@@ -1,15 +1,17 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import ConsentRequest, Appointment
+from .models import ConsentRequest
 
 
 class ConsentRequestSerializer(serializers.ModelSerializer):
     patient_name = serializers.CharField(
         source='patient.full_name', read_only=True
     )
-    doctor_name = serializers.CharField(
-        source='requested_by.user.get_full_name', read_only=True
-    )
+
+    doctor_name = serializers.SerializerMethodField()
+    def get_doctor_name(self, obj):
+        return obj.requested_by.user.get_full_name() or obj.requested_by.user.username
+
     hospital_name = serializers.CharField(
         source='hospital.name', read_only=True
     )

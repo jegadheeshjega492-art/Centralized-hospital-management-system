@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings
 
+from apps import accounts, hospitals
+
 
 class ConsentRequest(models.Model):
     STATUS_CHOICES = [
@@ -28,7 +30,7 @@ class ConsentRequest(models.Model):
         related_name='consent_requests'
     )
     requested_by = models.ForeignKey(
-        'accounts.DoctorProfile',
+        'hospitals.DoctorProfile',
         on_delete=models.CASCADE,
         related_name='consent_requests_made'
     )
@@ -77,7 +79,7 @@ class Appointment(models.Model):
         related_name='appointments'
     )
     doctor = models.ForeignKey(
-        'accounts.DoctorProfile',
+        'hospitals.DoctorProfile',
         on_delete=models.CASCADE,
         related_name='appointments'
     )

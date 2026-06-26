@@ -4,8 +4,10 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-
-from .models import ConsentRequest, Appointment
+from datetime import timedelta
+from datetime import datetime
+from apps.accounts.permissions import IsPatient
+from .models import ConsentRequest
 from .serializers import ConsentRequestSerializer, ConsentRespondSerializer
 from .permissions import IsVerifiedDoctor, IsPatientOwner
 
@@ -28,7 +30,7 @@ class ConsentRequestView(APIView):
 
 
 class ConsentApproveView(APIView):
-    permission_classes = [IsAuthenticated, IsPatientOwner]
+    permission_classes = [IsAuthenticated, IsPatient, IsPatientOwner]
 
     def patch(self, request, pk):
         consent = get_object_or_404(ConsentRequest, pk=pk)
@@ -42,13 +44,13 @@ class ConsentApproveView(APIView):
 
         if consent.appointment:
             appt = consent.appointment
-            expires_at = timezone.datetime.combine(
+            expires_at = datetime.combine(
                 appt.appointment_date,
                 appt.end_time,
                 tzinfo=timezone.get_current_timezone()
             )
         else:
-            expires_at = timezone.now() + timezone.timedelta(hours=24)
+            expires_at = timezone.now() + timedelta(hours=24)
 
         consent.status = 'APPROVED'
         consent.consent_method = 'PATIENT_SELF'
@@ -63,7 +65,7 @@ class ConsentApproveView(APIView):
 
 
 class ConsentDenyView(APIView):
-    permission_classes = [IsAuthenticated, IsPatientOwner]
+    permission_classes = [IsAuthenticated, IsPatient, IsPatientOwner]
 
     def patch(self, request, pk):
         consent = get_object_or_404(ConsentRequest, pk=pk)
