@@ -1,5 +1,6 @@
-// Shared root layout — applies to every page.
 import type { Metadata } from 'next'
+import { AuthProvider } from '@/context/AuthContext'
+import Navbar from '@/components/shared/Navbar'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -10,7 +11,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          <Navbar />
+          <main style={{ padding: '24px' }}>
+            {children}
+          </main>
+        </AuthProvider>
+      </body>
     </html>
   )
 }

@@ -1,2 +1,7 @@
 from django.urls import path
-urlpatterns = []  # TODO: Person responsible for 'hospitals' adds endpoints here.
+from .views import HospitalRegisterView, DoctorCreateView
+
+urlpatterns = [
+    path('register/', HospitalRegisterView.as_view(), name='hospital-register'),
+    path('doctors/create/', DoctorCreateView.as_view(), name='doctor-create'),
+]

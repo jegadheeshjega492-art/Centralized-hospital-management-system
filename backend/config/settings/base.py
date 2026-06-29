@@ -1,6 +1,7 @@
 from decouple import config
 from datetime import timedelta
 from pathlib import Path
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -21,9 +22,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
-    
-    #Person 4- File Storage
-    'storages',
+    'django_celery_beat',
 
     # Our apps
     'apps.accounts',
@@ -86,10 +85,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ── Custom User Model ──────────────────────────────────────
+# Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
 
-# ── DRF settings ──────────────────────────────────────────
+# DRF settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -99,63 +98,18 @@ REST_FRAMEWORK = {
     ),
 }
 
-# ── JWT settings ──────────────────────────────────────────
+# JWT settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME':  timedelta(minutes=config('ACCESS_TOKEN_LIFETIME', default=60, cast=int)),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=config('ACCESS_TOKEN_LIFETIME', default=60, cast=int)),
     'REFRESH_TOKEN_LIFETIME': timedelta(minutes=config('REFRESH_TOKEN_LIFETIME', default=10080, cast=int)),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-# ── CORS (allow Next.js dev server) ───────────────────────
+# CORS
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
 ]
 
-# ── Celery / Redis (Person 3 will use this) ───────────────
+# Celery / Redis
 CELERY_BROKER_URL = config('REDIS_URL', default='redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = config('REDIS_URL', default='redis://localhost:6379/0')
-
-# ==========================================================
-# Person 4 - File Storage Configuration
-#
-# TODO (Infrastructure / DevOps):
-# Replace placeholder values with the team's MinIO or AWS S3
-# configuration when available.
-# ==========================================================
-
-AWS_ACCESS_KEY_ID = config(
-    "AWS_ACCESS_KEY_ID",
-    default="minioadmin"
-)
-
-AWS_SECRET_ACCESS_KEY = config(
-    "AWS_SECRET_ACCESS_KEY",
-    default="minioadmin"
-)
-
-AWS_STORAGE_BUCKET_NAME = config(
-    "AWS_STORAGE_BUCKET_NAME",
-    default="health-records"
-)
-
-AWS_S3_ENDPOINT_URL = config(
-    "AWS_S3_ENDPOINT_URL",
-    default="http://localhost:9000"
-)
-
-AWS_S3_REGION_NAME = None
-
-AWS_S3_SIGNATURE_VERSION = "s3v4"
-
-AWS_S3_ADDRESSING_STYLE = "path"
-
-# ==========================================================
-# TODO (Person 4):
-# Uncomment this line after MinIO/S3 is running.
-# Leaving it commented prevents connection errors while the
-# storage server is not available.
-# ==========================================================
-
-# DEFAULT_FILE_STORAGE = (
-#     "storages.backends.s3boto3.S3Boto3Storage"
-# )
