@@ -1,4 +1,5 @@
 # TODO: Person responsible for 'audit' fills this in.
+
 from django.db import models
 
 
@@ -7,8 +8,6 @@ class AuditLog(models.Model):
     class Action(models.TextChoices):
         ADD_RECORD = "ADD_RECORD", "Add Record"
         VIEW_RECORD = "VIEW_RECORD", "View Record"
-        UPDATE_RECORD = "UPDATE_RECORD", "Update Record"
-        DELETE_RECORD = "DELETE_RECORD", "Delete Record"
 
     actor = models.ForeignKey(
         "accounts.User",
@@ -20,6 +19,16 @@ class AuditLog(models.Model):
     patient = models.ForeignKey(
         "accounts.PatientProfile",
         on_delete=models.CASCADE,
+        related_name="audit_logs"
+    )
+
+    # Added to track which hospital accessed the patient's records.
+    # This was requested by the team for better audit tracing.
+    hospital = models.ForeignKey(
+        "hospitals.Hospital",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="audit_logs"
     )
 
@@ -43,4 +52,4 @@ class AuditLog(models.Model):
     )
 
     def __str__(self):
-        return f"{self.action}"
+        return f"{self.action} - {self.patient}"
