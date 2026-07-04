@@ -1,6 +1,26 @@
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/AuthContext'
 import Link from 'next/link'
 
 export default function Home() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (loading) return
+    if (!user) return
+
+    if (user.role === 'PATIENT')        router.replace('/patient/dashboard')
+    if (user.role === 'HOSPITAL_ADMIN') router.replace('/dashboard/hospital')
+    if (user.role === 'DOCTOR')         router.replace('/dashboard/doctor')
+  }, [user, loading, router])
+
+  // Show nothing while checking auth — avoids flash of login page
+  if (loading || user) return null
+
   return (
     <>
       <section style={{ background: '#f8fafc', padding: '80px 24px', textAlign: 'center' }}>
@@ -20,7 +40,7 @@ export default function Home() {
         </div>
       </section>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderTop: '1px solid #e2e8f0', marginTop: '0' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderTop: '1px solid #e2e8f0' }}>
         {[
           { icon: '🔒', title: 'Consent-first', desc: 'Doctors can only access your records after you approve each request.' },
           { icon: '📋', title: 'Complete history', desc: 'All prescriptions, diagnoses and visits — in one place, forever.' },

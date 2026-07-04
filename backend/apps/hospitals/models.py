@@ -30,7 +30,6 @@ class DoctorProfile(models.Model):
     )
     license_number = models.CharField(max_length=100)
     department = models.CharField(max_length=100)
-    verified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

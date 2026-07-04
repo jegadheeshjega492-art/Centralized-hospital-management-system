@@ -8,7 +8,12 @@ export default function Navbar() {
 
   return (
     <nav style={styles.nav}>
-      <Link href="/" style={styles.brand}>HealthRecord</Link>
+      <Link href={
+  user?.role === 'PATIENT'        ? '/patient/dashboard' :
+  user?.role === 'HOSPITAL_ADMIN' ? '/dashboard/hospital' :
+  user?.role === 'DOCTOR'         ? '/dashboard/doctor' :
+  '/'
+} style={styles.brand}>HealthRecord</Link>
 
       <div style={styles.links}>
         {/* No one logged in */}
@@ -23,24 +28,23 @@ export default function Navbar() {
         {user?.role === 'PATIENT' && (
           <>
             <Link href="/patient/dashboard" style={styles.link}>Dashboard</Link>
-            <Link href="/patient/records"   style={styles.link}>My Records</Link>
-            <Link href="/patient/appointments" style={styles.link}>Appointments</Link>
+            <Link href="/dashboard/patient/consents" style={styles.link}>My Consents</Link>
           </>
         )}
 
         {/* Doctor links */}
         {user?.role === 'DOCTOR' && (
           <>
-            <Link href="/hospital/dashboard" style={styles.link}>Dashboard</Link>
-            <Link href="/doctor/patients"    style={styles.link}>My Patients</Link>
+            <Link href="/dashboard/doctor" style={styles.link}>Dashboard</Link>
           </>
         )}
 
         {/* Hospital Admin links */}
         {user?.role === 'HOSPITAL_ADMIN' && (
           <>
-            <Link href="/hospital/dashboard" style={styles.link}>Dashboard</Link>
-            <Link href="/hospital/doctors"   style={styles.link}>Manage Doctors</Link>
+           <Link href="/dashboard/hospital" style={styles.link}>Dashboard</Link>
+    <Link href="/dashboard/hospital/doctors/new" style={styles.link}>Add Doctor</Link>
+    <Link href="/dashboard/hospital/appointments/new" style={styles.link}>New Appointment</Link>
           </>
         )}
 

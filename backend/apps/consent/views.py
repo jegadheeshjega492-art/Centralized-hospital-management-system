@@ -18,7 +18,26 @@ from .tasks import send_otp_task
 
 
 class ConsentRequestView(APIView):
-    permission_classes = [IsAuthenticated, IsVerifiedDoctor]
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), IsVerifiedDoctor()]
+
+    def get(self, request):
+        patient_profile = getattr(request.user, 'patient_profile', None)
+        if not patient_profile:
+            return Response([], status=status.HTTP_200_OK)
+
+        # Only show OTP or manual verified active consents
+        # Patient cannot approve/deny these — they are read-only
+        consents = ConsentRequest.objects.filter(
+            patient=patient_profile,
+            status='APPROVED',
+            consent_method__in=['RECEPTIONIST_OTP', 'RECEPTIONIST_MANUAL'],
+            expires_at__gt=timezone.now()
+        )
+        return Response(ConsentRequestSerializer(consents, many=True).data)
 
     def post(self, request):
         serializer = ConsentRequestSerializer(data=request.data)

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
 from .models import ConsentRequest, Appointment
-
+from apps.accounts.models import PatientProfile
 
 class ConsentRequestSerializer(serializers.ModelSerializer):
     patient_name = serializers.CharField(source='patient.full_name', read_only=True)
@@ -38,18 +38,36 @@ class ConsentRespondSerializer(serializers.Serializer):
 
 
 class AppointmentSerializer(serializers.ModelSerializer):
+    # Accept patient_uid string instead of database ID
+    patient_uid = serializers.CharField(write_only=True)
+
     class Meta:
         model = Appointment
         fields = [
-            'id', 'patient', 'hospital', 'doctor',
+            'id', 'patient_uid', 'patient',
+            'hospital', 'doctor',
             'appointment_date', 'start_time', 'end_time',
-            'access_method',
-            'otp_hash', 'otp_verified', 'verified_by_staff', 'status', 'created_at',
+            'access_method', 'otp_hash', 'otp_verified',
+            'verified_by_staff', 'status', 'created_at',
         ]
         read_only_fields = [
-            'id', 'otp_hash', 'otp_verified',
+            'id', 'patient', 'otp_hash', 'otp_verified',
             'verified_by_staff', 'status', 'created_at'
         ]
+
+    def validate_patient_uid(self, value):
+        try:
+            profile = PatientProfile.objects.get(patient_uid=value)
+            return profile
+        except PatientProfile.DoesNotExist:
+            raise serializers.ValidationError(
+                f"No patient found with UID '{value}'. Check the UID and try again."
+            )
+
+    def create(self, validated_data):
+        # patient_uid has been resolved to a PatientProfile object by validate_patient_uid
+        patient_profile = validated_data.pop('patient_uid')
+        return Appointment.objects.create(patient=patient_profile, **validated_data)
 
 
 class OTPVerifySerializer(serializers.Serializer):

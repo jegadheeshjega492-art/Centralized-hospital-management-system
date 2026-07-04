@@ -4,8 +4,40 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import get_user_model
 from .models import Hospital, DoctorProfile, HospitalAdminProfile
 from .serializers import HospitalSerializer, DoctorCreateSerializer, DoctorProfileSerializer
+from apps.accounts.permissions import IsHospitalAdmin, IsDoctor
+from rest_framework.views import APIView
 
 User = get_user_model()
+
+class HospitalDashboardView(APIView):
+    """
+    GET /api/hospitals/dashboard/
+    Returns logged-in hospital admin's hospital info + doctors list.
+    """
+    permission_classes = [IsAuthenticated, IsHospitalAdmin]
+
+    def get(self, request):
+        hospital = request.user.hospital_admin_profile.hospital
+        doctors  = hospital.doctors.select_related('user').all()
+        return Response({
+            "hospital": HospitalSerializer(hospital).data,
+            "doctors":  DoctorProfileSerializer(doctors, many=True).data,
+        })
+
+
+class DoctorDashboardView(APIView):
+    """
+    GET /api/hospitals/doctor-profile/
+    Returns logged-in doctor's own profile info.
+    """
+    permission_classes = [IsAuthenticated, IsDoctor]
+
+    def get(self, request):
+        try:
+            doctor = request.user.doctor_profile
+        except Exception:
+            return Response({"error": "Doctor profile not found."}, status=404)
+        return Response(DoctorProfileSerializer(doctor).data)
 
 
 class HospitalRegisterView(generics.CreateAPIView):

@@ -48,21 +48,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // Login — calls your Django JWT endpoint, stores tokens, fetches user
-  const login = async (username: string, password: string) => {
+const login = async (username: string, password: string) => {
     const res = await api.post('/auth/login/', { username, password })
-
-    localStorage.setItem('access_token',  res.data.access)
+    localStorage.setItem('access_token', res.data.access)
     localStorage.setItem('refresh_token', res.data.refresh)
 
-    // Fetch user info and store in state
     const meRes = await api.get('/auth/me/')
+    console.log('User data:', meRes.data)
     setUser(meRes.data)
 
-    // Redirect based on role
     if (meRes.data.role === 'PATIENT')        router.push('/patient/dashboard')
-    if (meRes.data.role === 'HOSPITAL_ADMIN') router.push('/hospital/dashboard')
-    if (meRes.data.role === 'DOCTOR')         router.push('/hospital/dashboard')
-  }
+    else if (meRes.data.role === 'HOSPITAL_ADMIN') router.push('/dashboard/hospital')
+    else if (meRes.data.role === 'DOCTOR')    router.push('/dashboard/doctor')
+    else {
+        // role is empty — shouldn't happen but clear storage and show error
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('refresh_token')
+        throw new Error('User role is not set. Contact admin.')
+    }
+}
 
   // Logout — wipe tokens and go to login page
   const logout = () => {

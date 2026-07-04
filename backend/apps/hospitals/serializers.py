@@ -61,7 +61,7 @@ class DoctorProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DoctorProfile
-        fields = ['id', 'doctor_name', 'hospital_name', 'license_number', 'department', 'verified', 'created_at']
+        fields = ['id', 'doctor_name', 'hospital_name', 'license_number', 'department', 'created_at']
 
     def get_doctor_name(self, obj):
         return f"Dr. {obj.user.get_full_name() or obj.user.username}"
