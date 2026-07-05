@@ -36,3 +36,22 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
         # The view handles bulk_create separately.
         validated_data.pop('prescription_items', [])
         return MedicalRecord.objects.create(**validated_data)
+
+class PatientRecordSerializer(serializers.ModelSerializer):
+    prescription_items = PrescriptionItemSerializer(many=True, read_only=True)
+    hospital_name      = serializers.CharField(source='hospital.name',      read_only=True)
+    created_by_name    = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = MedicalRecord
+        fields = [
+            'id', 'record_type', 'title', 'details',
+            'hospital_name', 'created_by_name',
+            'attachment_url', 'created_at',
+            'prescription_items',
+        ]
+
+    def get_created_by_name(self, obj):
+        if not obj.created_by:
+            return 'Unknown'
+        return f"Dr. {obj.created_by.user.get_full_name() or obj.created_by.user.username}"

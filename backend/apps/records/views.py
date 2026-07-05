@@ -1,11 +1,12 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
 from django.db import transaction
 from django.utils import timezone
 
 from .models import MedicalRecord, PrescriptionItem
-from .serializers import MedicalRecordSerializer, PrescriptionItemSerializer
+from .serializers import MedicalRecordSerializer, PrescriptionItemSerializer, PatientRecordSerializer
 from apps.audit.models import AuditLog
 from apps.consent.models import ConsentRequest
 
@@ -104,3 +105,19 @@ class PrescriptionItemViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         record_id = self.kwargs.get('record_pk')
         return PrescriptionItem.objects.filter(record_id=record_id)
+
+class PatientRecordListView(APIView):
+    """
+    GET /api/records/patient/
+    Returns all records for the logged-in patient including prescription items.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        patient_profile = getattr(request.user, 'patient_profile', None)
+        if not patient_profile:
+            return Response([], status=200)
+        records = MedicalRecord.objects.filter(
+            patient=patient_profile
+        ).prefetch_related('prescription_items').order_by('-created_at')
+        return Response(PatientRecordSerializer(records, many=True).data)

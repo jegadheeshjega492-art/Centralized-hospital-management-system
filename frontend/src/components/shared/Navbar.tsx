@@ -9,7 +9,7 @@ export default function Navbar() {
   return (
     <nav style={styles.nav}>
       <Link href={
-  user?.role === 'PATIENT'        ? '/patient/dashboard' :
+  user?.role === 'PATIENT'        ? '/dashboard/patient' :
   user?.role === 'HOSPITAL_ADMIN' ? '/dashboard/hospital' :
   user?.role === 'DOCTOR'         ? '/dashboard/doctor' :
   '/'
@@ -25,12 +25,13 @@ export default function Navbar() {
         )}
 
         {/* Patient links */}
-        {user?.role === 'PATIENT' && (
-          <>
-            <Link href="/patient/dashboard" style={styles.link}>Dashboard</Link>
-            <Link href="/dashboard/patient/consents" style={styles.link}>My Consents</Link>
-          </>
-        )}
+       {user?.role === 'PATIENT' && (
+      <>
+        <Link href="/dashboard/patient"          style={styles.link}>Dashboard</Link>
+        <Link href="/dashboard/patient/consents" style={styles.link}>My Access</Link>
+        <Link href="/dashboard/patient/audit"    style={styles.link}>Audit Trail</Link>
+      </>
+      )}
 
         {/* Doctor links */}
         {user?.role === 'DOCTOR' && (

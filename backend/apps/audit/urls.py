@@ -1,2 +1,6 @@
 from django.urls import path
-urlpatterns = []  # TODO: Person responsible for 'audit' adds endpoints here.
+from .views import AuditLogListView
+
+urlpatterns = [
+    path('', AuditLogListView.as_view(), name='audit-list'),
+]

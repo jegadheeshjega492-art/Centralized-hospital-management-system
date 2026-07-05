@@ -13,7 +13,7 @@ export default function Home() {
     if (loading) return
     if (!user) return
 
-    if (user.role === 'PATIENT')        router.replace('/patient/dashboard')
+    if (user.role === 'PATIENT') router.replace('/dashboard/patient')
     if (user.role === 'HOSPITAL_ADMIN') router.replace('/dashboard/hospital')
     if (user.role === 'DOCTOR')         router.replace('/dashboard/doctor')
   }, [user, loading, router])

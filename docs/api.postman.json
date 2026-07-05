@@ -1,0 +1,448 @@
+{
+  "info": {
+    "name": "Health Record System API",
+    "description": "Complete API collection for the Centralized Patient Health Record Management System.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url",      "value": "http://localhost:8000/api" },
+    { "key": "access_token",  "value": "" },
+    { "key": "refresh_token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register patient",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/register/patient/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"john123\",\n  \"email\": \"john@example.com\",\n  \"password\": \"securepass123\",\n  \"full_name\": \"John Doe\",\n  \"dob\": \"2000-05-15\",\n  \"gender\": \"Male\",\n  \"contact_number\": \"9876543210\",\n  \"aadhaar_number\": \"123456789012\"\n}"
+            },
+            "description": "Register a new patient account. Hashes aadhaar_number server-side and generates a unique patient_uid."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"message\": \"Patient registered successfully.\",\n  \"user\": {\n    \"id\": 1,\n    \"username\": \"john123\",\n    \"email\": \"john@example.com\",\n    \"role\": \"PATIENT\"\n  }\n}"
+            },
+            {
+              "name": "400 Validation error",
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"username\": [\"A user with that username already exists.\"]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.access)  pm.collectionVariables.set('access_token',  data.access);",
+                  "if (data.refresh) pm.collectionVariables.set('refresh_token', data.refresh);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/login/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"john123\",\n  \"password\": \"securepass123\"\n}"
+            },
+            "description": "Login for any role (PATIENT, DOCTOR, HOSPITAL_ADMIN). Returns JWT access and refresh tokens. The test script auto-saves tokens to collection variables."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"access\": \"eyJ...\",\n  \"refresh\": \"eyJ...\"\n}"
+            },
+            {
+              "name": "401 Wrong credentials",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"detail\": \"No active account found with the given credentials\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh token",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/token/refresh/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}"
+            },
+            "description": "Get a new access token using the refresh token. Call this when access token expires (401 response)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"access\": \"eyJ...\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get current user",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/auth/me/",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "description": "Returns the logged-in user's id, username, email, and role."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"username\": \"john123\",\n  \"email\": \"john@example.com\",\n  \"role\": \"PATIENT\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Hospitals",
+      "item": [
+        {
+          "name": "Register hospital",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/hospitals/register/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Apollo Hospital\",\n  \"registration_number\": \"MH-2024-001\",\n  \"address\": \"123 Main St, Mumbai\",\n  \"contact_email\": \"admin@apollo.com\",\n  \"username\": \"apollo_admin\",\n  \"password\": \"securepass123\"\n}"
+            },
+            "description": "Register a new hospital. Creates Hospital row (verified=False) and a HOSPITAL_ADMIN user linked to it. Admin must verify the hospital via Django admin before the hospital admin can create doctors."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"message\": \"Hospital registered. Awaiting admin verification.\",\n  \"hospital\": {\n    \"id\": 1,\n    \"name\": \"Apollo Hospital\",\n    \"registration_number\": \"MH-2024-001\",\n    \"verified\": false\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Hospital dashboard",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/hospitals/dashboard/",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "description": "Returns logged-in hospital admin's hospital info + list of all doctors. Requires HOSPITAL_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"hospital\": {\n    \"id\": 1,\n    \"name\": \"Apollo Hospital\",\n    \"verified\": true\n  },\n  \"doctors\": [\n    {\n      \"id\": 1,\n      \"doctor_name\": \"Dr. Sample Doctor\",\n      \"department\": \"General\",\n      \"license_number\": \"LIC123\",\n      \"verified\": false\n    }\n  ]\n}"
+            },
+            {
+              "name": "403 Wrong role",
+              "status": "Forbidden",
+              "code": 403,
+              "body": "{\n  \"detail\": \"You do not have permission to perform this action.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create doctor",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/hospitals/doctors/create/",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"dr_smith\",\n  \"email\": \"smith@apollo.com\",\n  \"password\": \"securepass123\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Smith\",\n  \"license_number\": \"LIC456\",\n  \"department\": \"Cardiology\"\n}"
+            },
+            "description": "Create a doctor account linked to the hospital admin's hospital. Requires HOSPITAL_ADMIN role and hospital must be verified."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"message\": \"Doctor account created successfully.\",\n  \"doctor\": {\n    \"id\": 1,\n    \"doctor_name\": \"Dr. John Smith\",\n    \"department\": \"Cardiology\",\n    \"license_number\": \"LIC456\",\n    \"verified\": false\n  }\n}"
+            },
+            {
+              "name": "403 Hospital not verified",
+              "status": "Forbidden",
+              "code": 403,
+              "body": "{\n  \"error\": \"Your hospital is not verified yet. Contact the system admin.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Doctor profile",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/hospitals/doctor-profile/",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "description": "Returns logged-in doctor's own profile. Requires DOCTOR role."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"doctor_name\": \"Dr. John Smith\",\n  \"hospital_name\": \"Apollo Hospital\",\n  \"department\": \"Cardiology\",\n  \"license_number\": \"LIC456\",\n  \"verified\": false\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Consent",
+      "item": [
+        {
+          "name": "List patient consents",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/consent/request/",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "description": "Returns active OTP/manual verified consents for the logged-in patient. Only shows RECEPTIONIST_OTP and RECEPTIONIST_MANUAL consents with status=APPROVED."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": 1,\n    \"hospital_name\": \"Apollo Hospital\",\n    \"doctor_name\": \"Dr. John Smith\",\n    \"consent_method\": \"RECEPTIONIST_OTP\",\n    \"expires_at\": \"2026-07-02T18:00:00Z\",\n    \"resolved_at\": \"2026-07-02T14:00:00Z\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Create appointment",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/consent/appointments/",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient_uid\": \"UID3F2A9B4C1D\",\n  \"doctor\": 1,\n  \"hospital\": 1,\n  \"appointment_date\": \"2026-07-05\",\n  \"start_time\": \"10:00:00\",\n  \"end_time\": \"11:00:00\",\n  \"access_method\": \"OTP\"\n}"
+            },
+            "description": "Create an appointment. Requires HOSPITAL_ADMIN role. If access_method=OTP, triggers send_otp_task via Celery — OTP printed to terminal (simulated SMS). access_method options: OTP, MANUAL."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 35,\n  \"patient_uid\": \"UID3F2A9B4C1D\",\n  \"doctor\": 1,\n  \"hospital\": 1,\n  \"appointment_date\": \"2026-07-05\",\n  \"start_time\": \"10:00:00\",\n  \"end_time\": \"11:00:00\",\n  \"access_method\": \"OTP\",\n  \"status\": \"SCHEDULED\"\n}"
+            },
+            {
+              "name": "400 Invalid patient UID",
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"patient_uid\": [\"No patient found with UID 'UIDXXX'. Check the UID and try again.\"]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/consent/appointments/35/verify-otp/",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otp\": \"482910\"\n}"
+            },
+            "description": "Verify OTP for an appointment. Sets otp_verified=True, creates an APPROVED ConsentRequest with expires_at=appointment.end_time. Requires HOSPITAL_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"OTP verified, access granted\",\n  \"consent_id\": 12\n}"
+            },
+            {
+              "name": "400 Invalid OTP",
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"error\": \"Invalid OTP\"\n}"
+            },
+            {
+              "name": "400 Already verified",
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"error\": \"Appointment already verified.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Manual verify",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/consent/appointments/35/verify-manual/",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "description": "Manually verify patient identity. Sets verified_by_staff, creates APPROVED ConsentRequest. Requires HOSPITAL_ADMIN role."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"Manual verification done, access granted\",\n  \"consent_id\": 13\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Medical Records",
+      "item": [
+        {
+          "name": "List records",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/records/medical-records/",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "description": "Patients see their own records. Doctors see records they created. Returns newest first."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": 1,\n    \"patient_name\": \"John Doe\",\n    \"hospital_name\": \"Apollo Hospital\",\n    \"created_by_name\": \"Dr. John Smith\",\n    \"record_type\": \"DIAGNOSIS\",\n    \"title\": \"Routine checkup\",\n    \"details\": { \"diagnosis\": \"Healthy\" },\n    \"created_at\": \"2026-07-01T10:00:00Z\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Create record",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/records/medical-records/",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient\": 1,\n  \"record_type\": \"DIAGNOSIS\",\n  \"title\": \"Routine checkup\",\n  \"details\": {\n    \"diagnosis\": \"Healthy\",\n    \"doctor_notes\": \"No concerns\"\n  }\n}"
+            },
+            "description": "Create a medical record. Requires DOCTOR role and an active approved ConsentRequest for the patient+hospital. Records are append-only — no PUT/PATCH/DELETE. Creates AuditLog row automatically."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 1,\n  \"patient_name\": \"John Doe\",\n  \"record_type\": \"DIAGNOSIS\",\n  \"title\": \"Routine checkup\",\n  \"created_at\": \"2026-07-01T10:00:00Z\"\n}"
+            },
+            {
+              "name": "403 No active consent",
+              "status": "Forbidden",
+              "code": 403,
+              "body": "{\n  \"error\": \"No active approved consent for this patient at your hospital.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create prescription record",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/records/medical-records/",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patient\": 1,\n  \"record_type\": \"PRESCRIPTION\",\n  \"title\": \"Fever medication\",\n  \"details\": { \"diagnosis\": \"Viral fever\" },\n  \"prescription_items\": [\n    { \"tablet_name\": \"Paracetamol\", \"dosage\": \"500mg\", \"frequency\": \"Twice a day\", \"duration\": \"5 days\" },\n    { \"tablet_name\": \"Cetirizine\",  \"dosage\": \"10mg\",  \"frequency\": \"Once a day\",  \"duration\": \"5 days\" },\n    { \"tablet_name\": \"Vitamin C\",   \"dosage\": \"500mg\", \"frequency\": \"Once a day\",  \"duration\": \"10 days\" }\n  ]\n}"
+            },
+            "description": "Create a prescription record with nested medication items. All PrescriptionItem rows are bulk-created in one transaction. Requires active consent."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 2,\n  \"record_type\": \"PRESCRIPTION\",\n  \"title\": \"Fever medication\",\n  \"created_at\": \"2026-07-01T11:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get single record",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/records/medical-records/1/",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "description": "Retrieve a single record by ID. Creates a VIEW_RECORD AuditLog row automatically."
+          }
+        },
+        {
+          "name": "List prescription items",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/records/medical-records/2/prescriptions/",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "description": "List all PrescriptionItem rows for a prescription-type record. Replace 2 with actual record ID."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  { \"id\": 1, \"tablet_name\": \"Paracetamol\", \"dosage\": \"500mg\", \"frequency\": \"Twice a day\", \"duration\": \"5 days\", \"notes\": null },\n  { \"id\": 2, \"tablet_name\": \"Cetirizine\",  \"dosage\": \"10mg\",  \"frequency\": \"Once a day\",  \"duration\": \"5 days\", \"notes\": null },\n  { \"id\": 3, \"tablet_name\": \"Vitamin C\",   \"dosage\": \"500mg\", \"frequency\": \"Once a day\",  \"duration\": \"10 days\", \"notes\": null }\n]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Audit",
+      "item": [
+        {
+          "name": "List audit logs",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/audit/",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "description": "Returns audit logs for the logged-in patient — every ADD_RECORD and VIEW_RECORD event. Sorted newest first."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": 1,\n    \"action\": \"ADD_RECORD\",\n    \"actor\": \"dr_smith\",\n    \"hospital\": \"Apollo Hospital\",\n    \"timestamp\": \"2026-07-01T10:00:00Z\",\n    \"metadata\": { \"record_id\": 1, \"record_type\": \"DIAGNOSIS\" }\n  }\n]"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

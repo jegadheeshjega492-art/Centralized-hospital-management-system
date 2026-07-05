@@ -57,7 +57,7 @@ const login = async (username: string, password: string) => {
     console.log('User data:', meRes.data)
     setUser(meRes.data)
 
-    if (meRes.data.role === 'PATIENT')        router.push('/patient/dashboard')
+    if (meRes.data.role === 'PATIENT') router.push('/dashboard/patient')
     else if (meRes.data.role === 'HOSPITAL_ADMIN') router.push('/dashboard/hospital')
     else if (meRes.data.role === 'DOCTOR')    router.push('/dashboard/doctor')
     else {
