@@ -125,8 +125,8 @@ const handleManualVerify = async () => {
       {success ? (
         <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: '#f0fdf4', padding: '40px', borderRadius: '12px', textAlign: 'center' }}>
-            <p style={{ fontSize: '22px', color: '#16a34a', fontWeight: 600, marginBottom: '16px' }}>✅ {success}</p>
-            <button onClick={() => router.push('/hospital/dashboard')} style={{ ...btnStyle(), marginTop: 0, width: 'auto', padding: '10px 24px' }}>
+            <p style={{ fontSize: '22px', color: '#16a34a', fontWeight: 600, marginBottom: '16px' }}> {success}</p>
+            <button onClick={() => router.push('/dashboard/hospital')} style={{ ...btnStyle(), marginTop: 0, width: 'auto', padding: '10px 24px' }}>
               Go to Dashboard
             </button>
           </div>

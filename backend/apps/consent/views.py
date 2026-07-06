@@ -176,3 +176,31 @@ class ManualVerifyView(APIView):
             consent_method='RECEPTIONIST_MANUAL',
         )
         return Response({'message': 'Manual verification done, access granted', 'consent_id': consent.id})
+
+class CheckConsentView(APIView):
+    """
+    GET /api/consent/check/?patient_uid=UID3F2A...
+    Doctor checks if active consent exists for a patient at their hospital.
+    """
+    permission_classes = [IsAuthenticated, IsVerifiedDoctor]
+
+    def get(self, request):
+        patient_uid = request.query_params.get('patient_uid')
+        if not patient_uid:
+            return Response({'has_consent': False})
+
+        from apps.accounts.models import PatientProfile
+        try:
+            patient = PatientProfile.objects.get(patient_uid=patient_uid)
+        except PatientProfile.DoesNotExist:
+            return Response({'has_consent': False, 'error': 'Patient not found'})
+
+        hospital = request.user.doctor_profile.hospital
+        has_consent = ConsentRequest.objects.filter(
+            patient=patient,
+            hospital=hospital,
+            status='APPROVED',
+            expires_at__gt=timezone.now()
+        ).exists()
+
+        return Response({'has_consent': has_consent})

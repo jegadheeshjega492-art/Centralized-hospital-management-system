@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework_nested import routers
 from rest_framework.routers import DefaultRouter
-from .views import MedicalRecordViewSet, PrescriptionItemViewSet, PatientRecordListView
+from .views import MedicalRecordViewSet, PrescriptionItemViewSet, PatientRecordListView, DoctorPatientRecordView
 
 router = DefaultRouter()
 router.register(r'medical-records', MedicalRecordViewSet, basename='medical-records')
@@ -11,3 +11,4 @@ records_router.register(r'prescriptions', PrescriptionItemViewSet, basename='rec
 
 urlpatterns = router.urls + records_router.urls
 urlpatterns += [path('patient/', PatientRecordListView.as_view(), name='patient-records')]
+urlpatterns += [path('patient-history/', DoctorPatientRecordView.as_view(), name='doctor-patient-history')]

@@ -2,10 +2,11 @@ from rest_framework.permissions import BasePermission
 
 
 class IsVerifiedDoctor(BasePermission):
-    """Only verified doctors can create consent requests."""
+    """Only doctors with a doctor_profile can create consent requests."""
     def has_permission(self, request, view):
         try:
-            return request.user.doctor_profile.verified
+            # Just check the doctor_profile exists — verified field removed
+            return hasattr(request.user, 'doctor_profile') and request.user.doctor_profile is not None
         except AttributeError:
             return False
 

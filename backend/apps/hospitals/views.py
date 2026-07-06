@@ -82,7 +82,7 @@ class HospitalRegisterView(generics.CreateAPIView):
 
 class DoctorCreateView(generics.CreateAPIView):
     serializer_class = DoctorCreateSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsHospitalAdmin]
 
     def create(self, request, *args, **kwargs):
         user = request.user

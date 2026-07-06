@@ -37,11 +37,31 @@ class MedicalRecordViewSet(viewsets.ModelViewSet):
 
         doctor = user.doctor_profile
         hospital = doctor.hospital
+
+        # ── Resolve patient from patient_uid or patient ID ──
+        from apps.accounts.models import PatientProfile
+        patient_uid = request.data.get('patient_uid')
         patient_id = request.data.get('patient')
 
-        # ── Consent check ──────────────────────────────
+        try:
+            if patient_uid:
+                patient = PatientProfile.objects.get(patient_uid=patient_uid)
+            elif patient_id:
+                patient = PatientProfile.objects.get(id=patient_id)
+            else:
+                return Response(
+                    {"error": "patient or patient_uid is required."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except PatientProfile.DoesNotExist:
+            return Response(
+                {"error": "Patient not found."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # ── Consent check ───────────────────────────────────
         has_consent = ConsentRequest.objects.filter(
-            patient_id=patient_id,
+            patient=patient,
             hospital=hospital,
             status='APPROVED',
             expires_at__gt=timezone.now()
@@ -55,7 +75,11 @@ class MedicalRecordViewSet(viewsets.ModelViewSet):
 
         prescription_items_data = request.data.get('prescription_items', [])
 
-        serializer = self.get_serializer(data=request.data)
+        # Inject patient into request data for serializer
+        data = request.data.copy()
+        data['patient'] = patient.id
+
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
 
         with transaction.atomic():
@@ -120,4 +144,45 @@ class PatientRecordListView(APIView):
         records = MedicalRecord.objects.filter(
             patient=patient_profile
         ).prefetch_related('prescription_items').order_by('-created_at')
+        return Response(PatientRecordSerializer(records, many=True).data)
+
+class DoctorPatientRecordView(APIView):
+    """
+    GET /api/records/patient-history/?patient_uid=UID3F2A...
+    Doctor views a specific patient's records.
+    Requires active consent for this patient at the doctor's hospital.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not hasattr(request.user, 'doctor_profile'):
+            return Response({"error": "Only doctors can view patient records."}, status=403)
+
+        from apps.accounts.models import PatientProfile
+        patient_uid = request.query_params.get('patient_uid')
+        if not patient_uid:
+            return Response({"error": "patient_uid is required."}, status=400)
+
+        try:
+            patient = PatientProfile.objects.get(patient_uid=patient_uid)
+        except PatientProfile.DoesNotExist:
+            return Response({"error": "Patient not found."}, status=404)
+
+        hospital = request.user.doctor_profile.hospital
+
+        # Must have active consent
+        has_consent = ConsentRequest.objects.filter(
+            patient=patient,
+            hospital=hospital,
+            status='APPROVED',
+            expires_at__gt=timezone.now()
+        ).exists()
+
+        if not has_consent:
+            return Response({"error": "No active consent for this patient."}, status=403)
+
+        records = MedicalRecord.objects.filter(
+            patient=patient
+        ).prefetch_related('prescription_items').order_by('-created_at')
+
         return Response(PatientRecordSerializer(records, many=True).data)

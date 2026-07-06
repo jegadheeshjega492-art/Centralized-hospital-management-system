@@ -8,4 +8,5 @@ urlpatterns = [
     path('appointments/', views.AppointmentCreateView.as_view()),
     path('appointments/<int:pk>/verify-otp/', views.OTPVerifyView.as_view()),
     path('appointments/<int:pk>/verify-manual/', views.ManualVerifyView.as_view()),
+    path('check/', views.CheckConsentView.as_view()),
 ]
