@@ -19,6 +19,7 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'patient', 'patient_name', 'hospital', 'hospital_name',
             'created_by', 'created_by_name', 'record_type', 'title',
+            'hospital_address', 'reason_for_visit',
             'details', 'attachment_url', 'source', 'created_at',
             'prescription_items',
         ]
@@ -46,7 +47,8 @@ class PatientRecordSerializer(serializers.ModelSerializer):
         model  = MedicalRecord
         fields = [
             'id', 'record_type', 'title', 'details',
-            'hospital_name', 'created_by_name',
+            'hospital_name', 'hospital_address', 'reason_for_visit',
+            'created_by_name',
             'attachment_url', 'created_at',
             'prescription_items',
         ]
