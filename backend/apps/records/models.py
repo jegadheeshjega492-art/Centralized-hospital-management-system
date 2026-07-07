@@ -77,6 +77,18 @@ class MedicalRecord(models.Model):
         default="manual"
     )
 
+    hospital_address = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Hospital address at the time of visit"
+    )
+
+    reason_for_visit = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Chief complaint or reason for this visit"
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True
     )
