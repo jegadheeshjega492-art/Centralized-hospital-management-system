@@ -26,6 +26,8 @@ interface MedicalRecord {
   record_type:        string
   title:              string
   hospital_name:      string
+  hospital_address:   string | null
+  reason_for_visit:   string | null
   created_by_name:    string
   created_at:         string
   attachment_url:     string | null
@@ -98,25 +100,45 @@ function RecordCard({ record }: { record: MedicalRecord }) {
       </div>
 
       {record.record_type === 'PRESCRIPTION' && expanded && (
-        <div style={{ borderTop: '0.5px solid #f3f4f6', padding: '0 18px 14px' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '13px' }}>
-            <thead>
-              <tr style={{ background: '#f9fafb' }}>
-                {['Tablet Name', 'Dosage', 'Frequency', 'Duration'].map(h => (
-                  <th key={h} style={{ padding: '7px 10px', textAlign: 'left', fontWeight: 500, color: '#6b7280', fontSize: '12px', borderBottom: '0.5px solid #e5e7eb' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {record.prescription_items.map(item => (
-                <tr key={item.id}>
-                  {[item.tablet_name, item.dosage, item.frequency, item.duration].map((v, i) => (
-                    <td key={i} style={{ padding: '8px 10px', borderBottom: '0.5px solid #f3f4f6', color: '#374151' }}>{v}</td>
+        <div style={{ borderTop: '0.5px solid #f3f4f6', padding: '14px 18px' }}>
+          {/* Hospital Address */}
+          {record.hospital_address && (
+            <div style={{ marginBottom: '12px' }}>
+              <p style={{ fontSize: '12px', fontWeight: 500, color: '#6b7280', marginBottom: '4px' }}>Hospital Address</p>
+              <p style={{ fontSize: '13px', color: '#374151' }}>{record.hospital_address}</p>
+            </div>
+          )}
+
+          {/* Reason for Visit */}
+          {record.reason_for_visit && (
+            <div style={{ marginBottom: '12px' }}>
+              <p style={{ fontSize: '12px', fontWeight: 500, color: '#6b7280', marginBottom: '4px' }}>Reason for Visit</p>
+              <p style={{ fontSize: '13px', color: '#374151' }}>{record.reason_for_visit}</p>
+            </div>
+          )}
+
+          {/* Medications Table */}
+          <div style={{ marginTop: '14px' }}>
+            <p style={{ fontSize: '12px', fontWeight: 500, color: '#6b7280', marginBottom: '8px' }}>Medications</p>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ background: '#f9fafb' }}>
+                  {['Tablet Name', 'Dosage', 'Frequency', 'Duration'].map(h => (
+                    <th key={h} style={{ padding: '7px 10px', textAlign: 'left', fontWeight: 500, color: '#6b7280', fontSize: '12px', borderBottom: '0.5px solid #e5e7eb' }}>{h}</th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {record.prescription_items.map(item => (
+                  <tr key={item.id}>
+                    {[item.tablet_name, item.dosage, item.frequency, item.duration].map((v, i) => (
+                      <td key={i} style={{ padding: '8px 10px', borderBottom: '0.5px solid #f3f4f6', color: '#374151' }}>{v}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -132,7 +154,9 @@ function DoctorPatientContent() {
   const [records,          setRecords]          = useState<MedicalRecord[]>([])
   const [recordsLoading,   setRecordsLoading]   = useState(false)
   const [recordType,       setRecordType]       = useState('DIAGNOSIS')
+  const [title,            setTitle]            = useState('')
   const [notes,            setNotes]            = useState('')
+  const [reasonForVisit,   setReasonForVisit]   = useState('')
   const [fileUrl,          setFileUrl]          = useState('')
   const [prescriptionRows, setPrescriptionRows] = useState<PrescriptionRow[]>([
     { tablet_name: '', dosage: '', frequency: '', duration: '', notes: '' }
@@ -173,6 +197,11 @@ function DoctorPatientContent() {
   const handleSubmit = async () => {
     setError(''); setMessage('')
 
+    if (!title.trim()) {
+      setError('Title is required.')
+      return
+    }
+
     if (recordType === 'PRESCRIPTION') {
       if (prescriptionRows.some(r => !r.tablet_name || !r.dosage || !r.frequency || !r.duration)) {
         setError('Please fill all required prescription fields.')
@@ -183,7 +212,8 @@ function DoctorPatientContent() {
     const body: Record<string, unknown> = {
       patient_uid: uid,
       record_type: recordType,
-      title: `${recordType.replace('_', ' ')} — ${new Date().toLocaleDateString('en-IN')}`,
+      title: title,
+      reason_for_visit: reasonForVisit || null,
       details: { notes },
     }
     if (recordType === 'LAB_REPORT')   body.attachment_url      = fileUrl
@@ -193,7 +223,7 @@ function DoctorPatientContent() {
     try {
       await api.post('/records/medical-records/', body)
       setMessage('Record added successfully!')
-      setNotes(''); setFileUrl('')
+      setTitle(''); setNotes(''); setReasonForVisit(''); setFileUrl('')
       setPrescriptionRows([{ tablet_name: '', dosage: '', frequency: '', duration: '', notes: '' }])
       // Refresh history
       const res = await api.get(`/records/patient-history/?patient_uid=${uid}`)
@@ -266,6 +296,18 @@ function DoctorPatientContent() {
                 <option value="DISCHARGE_SUMMARY">Discharge Summary</option>
                 <option value="PRESCRIPTION">Prescription</option>
               </select>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>Title *</label>
+              <InputField value={title} onChange={setTitle} placeholder="e.g., Fever checkup, Blood test report" />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>Reason for visit</label>
+              <textarea value={reasonForVisit} onChange={e => setReasonForVisit(e.target.value)} rows={2}
+                placeholder="Chief complaint or reason for this visit..."
+                style={{ width: '100%', padding: '9px 12px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '14px', boxSizing: 'border-box', resize: 'vertical' }} />
             </div>
 
             {['DIAGNOSIS', 'ALLERGY', 'IMMUNIZATION', 'DISCHARGE_SUMMARY'].includes(recordType) && (
