@@ -18,6 +18,8 @@ interface MedicalRecord {
   record_type:       string
   title:             string
   hospital_name:     string
+  hospital_address:  string | null
+  reason_for_visit:  string | null
   created_by_name:   string
   created_at:        string
   attachment_url:    string | null
@@ -91,37 +93,57 @@ function RecordCard({ record }: { record: MedicalRecord }) {
         </div>
       </div>
 
-      {/* Prescription expand */}
+      {/* Expanded details */}
       {isPrescription && expanded && (
-        <div style={{ borderTop: '0.5px solid #f3f4f6', padding: '0 20px 16px' }}>
-          {record.prescription_items.length === 0 ? (
-            <p style={{ color: '#9ca3af', fontSize: '13px', paddingTop: '12px' }}>No items found.</p>
-          ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ background: '#f9fafb' }}>
-                  {['Tablet Name', 'Dosage', 'Frequency', 'Duration'].map(h => (
-                    <th key={h} style={{
-                      padding: '8px 12px', textAlign: 'left',
-                      fontWeight: 500, color: '#6b7280', fontSize: '12px',
-                      borderBottom: '0.5px solid #e5e7eb'
-                    }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {record.prescription_items.map(item => (
-                  <tr key={item.id}>
-                    {[item.tablet_name, item.dosage, item.frequency, item.duration].map((val, i) => (
-                      <td key={i} style={{
-                        padding: '10px 12px', borderBottom: '0.5px solid #f3f4f6', color: '#374151'
-                      }}>{val}</td>
+        <div style={{ borderTop: '0.5px solid #f3f4f6', padding: '16px 20px' }}>
+          {/* Hospital Address */}
+          {record.hospital_address && (
+            <div style={{ marginBottom: '12px' }}>
+              <p style={{ fontSize: '12px', fontWeight: 500, color: '#6b7280', marginBottom: '4px' }}>Hospital Address</p>
+              <p style={{ fontSize: '13px', color: '#374151' }}>{record.hospital_address}</p>
+            </div>
+          )}
+
+          {/* Reason for Visit */}
+          {record.reason_for_visit && (
+            <div style={{ marginBottom: '12px' }}>
+              <p style={{ fontSize: '12px', fontWeight: 500, color: '#6b7280', marginBottom: '4px' }}>Reason for Visit</p>
+              <p style={{ fontSize: '13px', color: '#374151' }}>{record.reason_for_visit}</p>
+            </div>
+          )}
+
+          {/* Prescription Items Table */}
+          <div style={{ marginTop: '16px' }}>
+            <p style={{ fontSize: '12px', fontWeight: 500, color: '#6b7280', marginBottom: '8px' }}>Medications</p>
+            {record.prescription_items.length === 0 ? (
+              <p style={{ color: '#9ca3af', fontSize: '13px' }}>No items found.</p>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ background: '#f9fafb' }}>
+                    {['Tablet Name', 'Dosage', 'Frequency', 'Duration'].map(h => (
+                      <th key={h} style={{
+                        padding: '8px 12px', textAlign: 'left',
+                        fontWeight: 500, color: '#6b7280', fontSize: '12px',
+                        borderBottom: '0.5px solid #e5e7eb'
+                      }}>{h}</th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                </thead>
+                <tbody>
+                  {record.prescription_items.map(item => (
+                    <tr key={item.id}>
+                      {[item.tablet_name, item.dosage, item.frequency, item.duration].map((val, i) => (
+                        <td key={i} style={{
+                          padding: '10px 12px', borderBottom: '0.5px solid #f3f4f6', color: '#374151'
+                        }}>{val}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       )}
     </div>
