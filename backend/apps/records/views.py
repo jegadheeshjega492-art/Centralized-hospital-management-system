@@ -78,6 +78,8 @@ class MedicalRecordViewSet(viewsets.ModelViewSet):
         # Inject patient into request data for serializer
         data = request.data.copy()
         data['patient'] = patient.id
+        # Auto-populate hospital_address from hospital model
+        data['hospital_address'] = hospital.address
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
